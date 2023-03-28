@@ -5,36 +5,13 @@ setup: true
 orbs:
   continuation: circleci/continuation@0.1.2
 
-parameters:
-  workflow:
-    type: string
-    default: ""
-  username:
-    type: string
-    default: ""
-  sfcc-branch:
-    type: string
-    default: "sandbox-automation"
-  sandbox-seed:
-    type: string
-    default: "small"
-  sandbox-resource-profile:
-    type: string
-    default: "medium"
-  sandbox-ttl:
-    type: integer
-    default: 1
-  instance-number:
-    type: string
-    default: ""
-
 jobs:
   setup:
     executor: continuation/default
     steps:
       - checkout
       - run:
-          name: Set commit_message parameter
+          name: Generate config
           command: |
             export GIT_COMMIT_MESSAGE="$(git log --format=%B -n 1 $CIRCLE_SHA1)"
             echo "GIT_COMMIT_MESSAGE='$GIT_COMMIT_MESSAGE'"
@@ -45,4 +22,4 @@ jobs:
 workflows:
   setup:
     jobs:
-      - setup 
+      - setup
