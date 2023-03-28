@@ -1,44 +1,67 @@
-orbs:
-  continuation: circleci/continuation@0.1.2
-
+version: 2.1
 parameters:
   workflow:
     type: string
     default: ""
-  username:
-    type: string
-    default: ""
   sfcc-branch:
     type: string
-    default: "sandbox-automation"
-  sandbox-seed:
+    default: ""
+  deploy_branch:
     type: string
-    default: "small"
-  sandbox-resource-profile:
+    default: "main"
+  commit_message:
+    type: string
+    default: ""
+  # sfcc-auth-Client-ID:
+  #   type: string
+  #   default: SFCC_OAUTH_CLIENT_ID
+  # sfcc-auth-Client-Secret:
+  #   type: string
+  #   default: SFCC_OAUTH_CLIENT_SECRET
+  sandbox-profile:
     type: string
     default: "medium"
-  sandbox-ttl:
+  sandbox-seed:         #This allows admins and developers to safely modify data before going live with a project, eliminating the need to make changes in production. 
+    type: string
+    default: "small"
+  sandbox-ttl:          #TODO --> "sandbox ttl(time-to-live) or {sandox timeperiod}"
     type: integer
     default: 1
   instance-number:
     type: string
     default: ""
 
+commands:
+  install-sfcc-ci:
+    steps:
+      - run:
+          name: Install sfcc-ci
+          command: |
+            sudo npm install -g sfcc-ci
+            echo "sfcc-ci version: $(sfcc-ci --version)"
+
 jobs:
-  setup:
-    executor: continuation/default
+  setup-sfcc-cli:
+    docker:
+      - image: cimg/node:17.2.0
+    resource_class: small
     steps:
       - checkout
+      - install-sfcc-ci
       - run:
-          name: Set commit_message parameter
+          name: authenticate sfcc-ci
           command: |
-            export GIT_COMMIT_MESSAGE="$(git log --format=%B -n 1 $CIRCLE_SHA1)"
-            echo "GIT_COMMIT_MESSAGE='$GIT_COMMIT_MESSAGE'"
-            yq -i ".parameters.commit_message.default = strenv(GIT_COMMIT_MESSAGE)" ./.circleci/main.yaml
-      - continuation/continue:
-          configuration_path: ./.circleci/main.yml
+            sfcc-ci client:auth
+      - run:
+          name: test sfcc-ci
+          command: |
+            sfcc-ci sandbox:list
+      # - run:
+      #     name: Create a sandbox
+      #     command: |
+      #       sfcc-ci sandbox:create --realm bdms --profile '<<pipeline.parameters.sandbox-profile>>' --ttl '<<pipeline.parameters.sandbox-ttl>>' --sync --json | jq
 
 workflows:
-  setup:
+  sandbox-automation:
     jobs:
-      - setup
+      - setup-sfcc-cli
