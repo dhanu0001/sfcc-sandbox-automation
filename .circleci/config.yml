@@ -22,4 +22,4 @@ jobs:
 workflows:
   setup:
     jobs:
-      - setup
+      - setup 
